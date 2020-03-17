@@ -35,11 +35,15 @@ int main(int argc, const char* argv[]) {
 
   FILE *f;
   f = fopen(argv[1], "r");
+  if (f == NULL) {
+    fprintf(stderr, "Could not open file");
+    exit(-1);
+  }
 
-  fscanf(f, "%d\n", iter);
-  fscanf(f, "%lf\n", alfa);
-  fscanf(f, "%d\n", feats);
-  fscanf(f, "%d %d %d\n", rows, cols, nZ);
+  fscanf(f, "%d\n", &iter);
+  fscanf(f, "%lf\n", &alfa);
+  fscanf(f, "%d\n", &feats);
+  fscanf(f, "%d %d %d\n", &rows, &cols, &nZ);
 
   A = (double **) malloc (rows * sizeof(double*));
   B = (double **) malloc (rows * sizeof(double*));
@@ -53,7 +57,7 @@ int main(int argc, const char* argv[]) {
   for (int i = 0; i < nZ; i++) {
     int r, c;
     double val;
-    fscanf(f, "%d %d %lf\n", r, c, val);
+    fscanf(f, "%d %d %lf\n", &r, &c, &val);
     A[r][c] = val;
   }
 
