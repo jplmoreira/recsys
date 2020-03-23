@@ -10,22 +10,24 @@ double*** R;
 double** B;
 double** A;
 int cur = 0, prev = 1;
+double* A_val;
+int* A_l;
+int* A_c;
 
 void random_fill_LR(int nU, int nI, int nF)
 {
-  srandom(0);
-  for(int i = 0; i < nU; i++)
-    for(int j = 0; j < nF; j++)
-      L[cur][i][j] = RAND01 / (double) nF;
-  for(int i = 0; i < nF; i++)
-    for(int j = 0; j < nI; j++)
-      R[cur][i][j] = RAND01 / (double) nF;
-  /* memcpy(L[cur][0], (double[]){ 0.420094, 0.197191 }, sizeof(double)*2); */
-  /* memcpy(L[cur][1], (double[]){ 0.391550, 0.399220 }, sizeof(double)*2); */
-  /* memcpy(L[cur][2], (double[]){ 0.455824, 0.098776 }, sizeof(double)*2); */
-  /* memcpy(L[cur][3], (double[]){ 0.167611, 0.384115 }, sizeof(double)*2); */
-  /* memcpy(R[cur][0], (double[]){ 0.138887, 0.276985, 0.238699, 0.314435, 0.182392 }, sizeof(double)*5); */
-  /* memcpy(R[cur][1], (double[]){ 0.256700, 0.476115, 0.458098, 0.317856, 0.358648 }, sizeof(double)*5); */
+  /* srandom(0); */
+  /* for(int i = 0; i < nU; i++) */
+  /*   for(int j = 0; j < nF; j++) */
+  /*     L[cur][i][j] = RAND01 / (double) nF; */
+  /* for(int i = 0; i < nF; i++) */
+  /*   for(int j = 0; j < nI; j++) */
+  /*     R[cur][i][j] = RAND01 / (double) nF; */
+  memcpy(L[cur][0], (double[]){ 0.420094, 0.197191 }, sizeof(double)*2);
+  memcpy(L[cur][1], (double[]){ 0.391550, 0.399220 }, sizeof(double)*2);
+  memcpy(L[cur][2], (double[]){ 0.455824, 0.098776 }, sizeof(double)*2);
+  memcpy(R[cur][0], (double[]){ 0.167611, 0.384115, 0.138887, 0.276985, 0.238699 }, sizeof(double)*5);
+  memcpy(R[cur][1], (double[]){ 0.314435, 0.182392, 0.256700, 0.476115, 0.458098 }, sizeof(double)*5);
 }
 
 
@@ -43,15 +45,10 @@ void calculate_B(int num_rows, int num_colums, int num_feats){
   }
 }
 
-void estimate_A(){
-    
-}
-
 void calculate_L_and_R(int num_rows, int num_colums, int num_feats, double alpha){
   int l, c;
   int k, i;
   double delta;
-  double sum_L = 0, sum_R = 0;
   prev = cur;
   cur = ++cur % 2;
   for(l = 0; l < num_rows; l++){
@@ -59,22 +56,12 @@ void calculate_L_and_R(int num_rows, int num_colums, int num_feats, double alpha
       if(A[l][c] != 0){
         delta = A[l][c] - B[l][c];
         for(k = 0; k < num_feats; k++){
-          for(i = 0; i < num_colums; i++){
-            if (A[l][i] != 0)
-              sum_L += 2*delta*(-R[prev][k][i]);
-          }
-          L[cur][l][k] = L[prev][l][k] - alpha*sum_L;
-          for(i = 0; i < num_rows; i++){
-            if (A[i][c] != 0)
-              sum_R += 2*delta*(-L[prev][i][k]);
-          }
-          R[cur][k][c] = R[prev][k][c] - alpha*sum_R;
-          sum_L = sum_R = 0;
+          L[cur][l][k] = L[cur][l][k] - alpha*2*delta*(-R[prev][k][c]);
+          R[cur][k][c] = R[cur][k][c] - alpha*2*delta*(-L[prev][l][k]);
         }
       } 
     }
   }
-    
 }
     
 
@@ -137,7 +124,6 @@ int main(int argc, char **argv){
   random_fill_LR(num_rows, num_colums, num_feats);
   calculate_B(num_rows, num_colums, num_feats);
   int i = 0;
-  estimate_A();
   while(i < num_iters){
     calculate_L_and_R(num_rows, num_colums, num_feats, alpha);
     calculate_B(num_rows, num_colums, num_feats);
