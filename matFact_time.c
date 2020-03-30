@@ -6,36 +6,22 @@
 #define RAND01 ((double)random() / (double)RAND_MAX)
 
 void random_fill_LR(int nU, int nI, int nF, double *L, double *R) {
-  srandom(1);
+  srandom(0);
   for(int i = 0; i < nU; i++)
     for(int j = 0; j < nF; j++)
       L[i*nF + j] = RAND01 / (double) nF;
   for(int i = 0; i < nF; i++)
     for(int j = 0; j < nI; j++)
-      R[i*nI + j] = RAND01 / (double) nF;
+      R[j*nF + i] = RAND01 / (double) nF;
 }
 
 
 void calculate_B(int num_rows, int num_columns, int num_feats, double *B, double *L, double *R){
-	/*for(int i = 0; i < num_rows * num_columns; i++){
-		double sum = 0;
-		int row = i / num_columns;
-		int col = i % num_columns;
-		for(int k = 0; k < num_feats; k++){
-			sum += L[row*num_feats + k]*R[k*num_columns + col];
-		}
-		B[row*num_columns + col] = sum;
-	}*/
-	
-	
-	
-	
-	
   for(int i = 0; i < num_rows; i++){
     for(int j = 0; j < num_columns; j++){
       double sum = 0;	
       for(int k = 0; k < num_feats; k++){
-        sum += L[i*num_feats + k]*R[k*num_columns + j];
+        sum += L[i*num_feats + k]*R[j*num_feats + k];
       }
       B[i*num_columns + j] = sum;
     }	
@@ -54,8 +40,8 @@ void calculate_L_and_R(int num_rows, int num_columns, int num_feats, int num_non
   for (int n = 0; n < num_non_zeros; n++) {
     double delta = A_val[n] - B[A_r[n]*num_columns + A_c[n]];
     for (int f = 0; f < num_feats; f++) {
-      L[A_r[n]*num_feats + f] += alpha*2*delta*R_copy[f*num_columns + A_c[n]];
-      R[f*num_columns + A_c[n]] += alpha*2*delta*L_copy[A_r[n]*num_feats + f];
+      L[A_r[n]*num_feats + f] += alpha*2*delta*R_copy[A_c[n]*num_feats + f];
+      R[A_c[n]*num_feats + f] += alpha*2*delta*L_copy[A_r[n]*num_feats + f];
     }
   }
 
@@ -154,11 +140,14 @@ int main(int argc, char **argv){
   printf("        ---->Calculo dos B-----> %f\n", time_B);
 
   FILE *out = fopen("output.txt", "w");
+  int nz= 0;
   for(int i = 0; i < num_rows; i++){
     double max = 0;
     int index;
     for(int j = 0; j < num_columns; j++){
-      if(!is_non_zero(i, j, num_non_zeros, A_r, A_c)){
+      if(A_r[nz] == i && A_c[nz] == j){
+	nz++;
+      } else {
         if(B[i*num_columns + j] > max){
           max = B[i*num_columns + j];
           index = j;
