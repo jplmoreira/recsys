@@ -14,6 +14,15 @@ void random_fill_LR(int nU, int nI, int nF, double *L, double *R) {
       R[j*nF + i] = RAND01 / (double) nF;
 }
 
+void estimate_B(int num_non_zeros, int num_feats, int num_columns, double *B,
+                double *L, double *R, int *A_r, int *A_c) {
+  for (int i = 0; i < num_non_zeros; i++) {
+    double sum = 0;
+    for (int j = 0; j < num_feats; j++)
+      sum += L[A_r[i] * num_feats + j] * R[A_c[i] * num_feats + j];
+    B[A_r[i] * num_columns + A_c[i]] = sum;
+  }
+}
 
 void calculate_B(int num_rows, int num_columns, int num_feats, double *B, double *L, double *R){
   for(int i = 0; i < num_rows; i++){
@@ -46,14 +55,6 @@ void calculate_L_and_R(int num_rows, int num_columns, int num_feats, int num_non
 
   free(L_copy);
   free(R_copy);
-}
-    
-int is_non_zero(int row, int col, int num_non_zeros, int *A_r, int *A_c) {
-  for (int i = 0; i < num_non_zeros; i++) {
-    if (row == A_r[i] && col == A_c[i])
-      return 1;
-  }
-  return 0;
 }
 
 int main(int argc, char **argv){
@@ -96,24 +97,28 @@ int main(int argc, char **argv){
   fclose(f);
 
   random_fill_LR(num_rows, num_columns, num_feats, L, R);
-  calculate_B(num_rows, num_columns, num_feats, B, L, R);
+  estimate_B(num_non_zeros, num_feats, num_columns, B, L, R, A_r, A_c);
 
   for (int i = 0; i < num_iters; i++) {
     calculate_L_and_R(num_rows, num_columns, num_feats, num_non_zeros,
                       alpha, A_val, A_r, A_c, B, L, R);
-    calculate_B(num_rows, num_columns, num_feats, B, L, R);
+    estimate_B(num_non_zeros, num_feats, num_columns, B, L, R, A_r, A_c);
   }
 
+  calculate_B(num_rows, num_columns, num_feats, B, L, R);
+  
+  int nz = 0;
   for(int i = 0; i < num_rows; i++){
     double max = 0;
     int index;
-    for(int j = 0; j < num_columns; j++){
-      if(!is_non_zero(i, j, num_non_zeros, A_r, A_c)){
-        if(B[i*num_columns + j] > max){
+    for(int j = 0; j < num_columns; j++) {
+      if(A_r[nz] != i || A_c[nz] != j) {
+        if(B[i*num_columns + j] > max) {
           max = B[i*num_columns + j];
           index = j;
         }
-      }
+      } else
+        nz++;
     }
     printf("%d\n", index);
   }
