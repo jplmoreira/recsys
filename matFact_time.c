@@ -15,6 +15,15 @@ void random_fill_LR(int nU, int nI, int nF, double *L, double *R) {
       R[j*nF + i] = RAND01 / (double) nF;
 }
 
+void estimate_B(int num_non_zeros, int num_feats, int num_columns, double *B,
+                double *L, double *R, int *A_r, int *A_c) {
+  for (int i = 0; i < num_non_zeros; i++) {
+    double sum = 0;
+    for (int j = 0; j < num_feats; j++)
+      sum += L[A_r[i] * num_feats + j] * R[A_c[i] * num_feats + j];
+    B[A_r[i] * num_columns + A_c[i]] = sum;
+  }
+}
 
 void calculate_B(int num_rows, int num_columns, int num_feats, double *B, double *L, double *R){
   for(int i = 0; i < num_rows; i++){
@@ -49,14 +58,6 @@ void calculate_L_and_R(int num_rows, int num_columns, int num_feats, int num_non
   free(R_copy);
 }
     
-int is_non_zero(int row, int col, int num_non_zeros, int *A_r, int *A_c) {
-  for (int i = 0; i < num_non_zeros; i++) {
-    if (row == A_r[i] && col == A_c[i])
-      return 1;
-  }
-  return 0;
-}
-
 int main(int argc, char **argv){
   if (argc != 2) {
     printf("Wrong usage: matFact [input file]\n");
@@ -107,7 +108,7 @@ int main(int argc, char **argv){
   time(&start_t);
 
   random_fill_LR(num_rows, num_columns, num_feats, L, R);
-  calculate_B(num_rows, num_columns, num_feats, B, L, R);
+  estimate_B(num_non_zeros, num_feats, num_columns,B, L, R, A_r, A_c);
   
   time(&end_t);
   printf("----> Random fill dos Ls r Rs e primeiro B ----> %f\n", difftime(end_t, start_t));
@@ -126,19 +127,23 @@ int main(int argc, char **argv){
 	time(&end_LR);
 	time_LR += difftime(end_LR, start_LR);
 	time(&start_B);
-    calculate_B(num_rows, num_columns, num_feats, B, L, R);
+    estimate_B(num_non_zeros, num_feats, num_columns,B, L, R, A_r, A_c);
 	time(&end_B);
 	time_B += difftime(end_B, start_B);
   }
   
-  
   time(&end_t);
   printf("---->Itereçoes essenciais----> %f\n", difftime(end_t, start_t));
-  time(&start_t);
-  
   printf("        ---->Calculo dos Ls e Rs-----> %f\n", time_LR);
   printf("        ---->Calculo dos B-----> %f\n", time_B);
+  time(&start_t);
+  
+  calculate_B(num_rows, num_columns, num_feats, B, L, R);
 
+  time(&end_t);
+  printf("---->Calculo final B----> %f\n", difftime(end_t, start_t));
+  time(&start_t);
+  
   FILE *out = fopen("output.txt", "w");
   int nz= 0;
   for(int i = 0; i < num_rows; i++){
