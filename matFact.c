@@ -5,13 +5,13 @@
 #define RAND01 ((double)random() / (double)RAND_MAX)
 
 void random_fill_LR(int nU, int nI, int nF, double *L, double *R) {
-  srandom(1);
+  srandom(0);
   for(int i = 0; i < nU; i++)
     for(int j = 0; j < nF; j++)
       L[i*nF + j] = RAND01 / (double) nF;
   for(int i = 0; i < nF; i++)
     for(int j = 0; j < nI; j++)
-      R[i*nI + j] = RAND01 / (double) nF;
+      R[j*nF + i] = RAND01 / (double) nF;
 }
 
 
@@ -20,7 +20,7 @@ void calculate_B(int num_rows, int num_columns, int num_feats, double *B, double
     for(int j = 0; j < num_columns; j++){
       double sum = 0;	
       for(int k = 0; k < num_feats; k++){
-        sum += L[i*num_feats + k]*R[k*num_columns + j];
+        sum += L[i*num_feats + k]*R[j*num_feats + k];
       }
       B[i*num_columns + j] = sum;
     }	
@@ -39,8 +39,8 @@ void calculate_L_and_R(int num_rows, int num_columns, int num_feats, int num_non
   for (int n = 0; n < num_non_zeros; n++) {
     double delta = A_val[n] - B[A_r[n]*num_columns + A_c[n]];
     for (int f = 0; f < num_feats; f++) {
-      L[A_r[n]*num_feats + f] += alpha*2*delta*R_copy[f*num_columns + A_c[n]];
-      R[f*num_columns + A_c[n]] += alpha*2*delta*L_copy[A_r[n]*num_feats + f];
+      L[A_r[n]*num_feats + f] += alpha*2*delta*R_copy[A_c[n]*num_feats + f];
+      R[A_c[n]*num_feats + f] += alpha*2*delta*L_copy[A_r[n]*num_feats + f];
     }
   }
 
