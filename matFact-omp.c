@@ -29,13 +29,13 @@ void estimate_B(int num_non_zeros, int num_feats, int num_columns, double *B,
 }
 
 void calculate_B(int num_rows, int num_columns, int num_feats, double *B, double *L, double *R){
-  for(int i = 0; i < num_rows; i++){
-    for(int j = 0; j < num_columns; j++){
-      double sum = 0;	
-      for(int k = 0; k < num_feats; k++){
-        sum += L[i*num_feats + k]*R[j*num_feats + k];
+  int i, j, k;
+  #pragma omp parallel for private(i, j, k)
+  for(i = 0; i < num_rows; i++){
+    for(j = 0; j < num_columns; j++){
+      for(k = 0; k < num_feats; k++){
+        B[i*num_columns + j] += L[i*num_feats + k]*R[j*num_feats + k];
       }
-      B[i*num_columns + j] = sum;
     }	
   }
 }
