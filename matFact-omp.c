@@ -18,10 +18,9 @@ void random_fill_LR(int nU, int nI, int nF, double *L, double *R) {
 void estimate_B(int num_non_zeros, int num_feats, int num_columns, double *B,
                 double *L, double *R, int *A_r, int *A_c) {
   int i, j;
-  double sum;
-  #pragma omp parallel for private(i, sum, j)
+  #pragma omp parallel for private(i, j) schedule(auto) if(num_non_zeros - i > 200)
   for (i = 0; i < num_non_zeros; i++) {
-    sum = 0;
+    double sum = 0;
     for (j = 0; j < num_feats; j++)
       sum += L[A_r[i] * num_feats + j] * R[A_c[i] * num_feats + j];
     B[A_r[i] * num_columns + A_c[i]] = sum;
@@ -50,13 +49,13 @@ void calculate_L_and_R(int num_rows, int num_columns, int num_feats, int num_non
   memcpy(R_copy, R, sizeof(double) * num_feats * num_columns);
 
   int n, f;
-  double delta;
-
-  #pragma omp parallel for private(f, delta, n) reduction(+:L[:num_rows*num_feats], R[:num_feats*num_columns])
+  #pragma omp parallel for private(f, n) schedule(auto) if(num_non_zeros - n > 200)
   for (n = 0; n < num_non_zeros; n++) {
-    delta = A_val[n] - B[A_r[n]*num_columns + A_c[n]];
+    double delta = A_val[n] - B[A_r[n]*num_columns + A_c[n]];
     for (f = 0; f < num_feats; f++) {
+      #pragma omp atomic
       L[A_r[n]*num_feats + f] += alpha*2*delta*R_copy[A_c[n]*num_feats + f];
+      #pragma omp atomic
       R[A_c[n]*num_feats + f] += alpha*2*delta*L_copy[A_r[n]*num_feats + f];
     }
   }
@@ -115,7 +114,6 @@ int main(int argc, char **argv){
 
   calculate_B(num_rows, num_columns, num_feats, B, L, R);
   
-  FILE *out = fopen("output_com_t.txt", "w");
   int nz = 0;
   for(int i = 0; i < num_rows; i++){
     double max = 0;
@@ -129,12 +127,9 @@ int main(int argc, char **argv){
       } else
         nz++;
     }
-    //printf("%d\n", index);
-	fprintf(out, "%d", index);
-	fputs("\n", out);
+    printf("%d\n", index);
   }
 
-  fclose(out);
   free(L);
   free(R);
   free(B);
