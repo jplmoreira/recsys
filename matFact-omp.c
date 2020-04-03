@@ -6,7 +6,7 @@
 #define RAND01 ((double)random() / (double)RAND_MAX)
 
 void random_fill_LR(int nU, int nI, int nF, double *L, double *R) {
-  srandom(1);
+  srandom(0);
   for(int i = 0; i < nU; i++)
     for(int j = 0; j < nF; j++)
       L[i*nF + j] = RAND01 / (double) nF;
